@@ -154,5 +154,18 @@ def makeBarChart(data, start = None):
     show(p)
     print('done')
 
+def calcGini(data):
+    data = data.loc[data['Action'][::-1].index, :]
+    dx = 1/data['Action'].size
+    eqs = np.linspace(dx, 1, data['Action'].size)
+    cums = data['Action'].cumsum()
+    ints = (eqs - cums)*dx
+    
+    return sum(ints)
+
+#newQuery()
+
 start = dt.now() - td(days = 90)
-makeBarChart(df, start = start)
+temp = modShareDF(start = start)
+
+show = calcGini(temp)
