@@ -11,9 +11,9 @@ from datetime import timedelta as td
 import praw
 import numpy as np
 import pandas as pd
-
+import pprint
 # Global variables
-
+pr = pprint.PrettyPrinter(indent=4)
 df = pd.read_pickle('data/fullDataBase.pkl')
 creds = pd.read_csv('credentials.csv').T.to_dict()[0]
 reddit = praw.Reddit(**creds)
@@ -153,19 +153,135 @@ def makeBarChart(data, start = None):
     p.yaxis.formatter=NumeralTickFormatter(format="0.0%")
     show(p)
     print('done')
-
-def calcGini(data):
-    data = data.loc[data['Action'][::-1].index, :]
-    dx = 1/data['Action'].size
-    eqs = np.linspace(dx, 1, data['Action'].size)
-    cums = data['Action'].cumsum()
-    ints = (eqs - cums)*dx
     
-    return sum(ints)
 
+date = dt(year = 2020, month = 6, day = 15)
 #newQuery()
+makeBarChart(df, date)
 
-start = dt.now() - td(days = 90)
-temp = modShareDF(start = start)
 
-show = calcGini(temp)
+#%%
+mods,b = getMods()
+mods.extend(b)
+other = ['AskEconMod','groupbot_ae', 'BainBotBeepBoop', 'jenbanim']
+for mod in other:
+    mods.remove(mod)
+
+modDict = {
+        'mods':mods
+        }
+
+modDict['Admin'] = [mods.pop(0)]
+
+red = ['a_s_h_e_n',
+       'BainCapitalist', 
+       'smalleconomist',
+       'Cutlasss',
+       'MrDannyOcean',
+       'DrunkenAsparagus',
+       'isntanywhere',
+       'Serialk'
+       ]
+modDict['Moderator'] = red
+for mod in red:
+    mods.remove(mod)
+
+modDict['REN'] = []
+for mod in reddit.subreddit('AskEconomics').moderator():
+     if mod.mod_permissions[0] == 'all' and mod.name in modDict['mods']:
+         modDict['REN'].append(mod.name)
+         mods.remove(mod)
+
+modDict['QualityContributor'] = modDict.pop('mods')
+
+modDict['Other'] = other
+
+for cat in modDict:
+    names = ''
+    for mod in modDict[cat]:
+        names = names + '/u/' + mod + ', '
+    names = names[:-2]
+    print('{}: {}'.format(cat, names))
+    print()
+    
+mods = {}
+for key, value in modDict.items():
+    for val in value:
+        mods[val] = key
+print(mods)
+reddit.subreddit('AskEconomics').flair.set('BainBotBeepBoop',css_class= 'Other')
+ex = ['Quality Contributor', 'Moderator', None]
+texts = {
+        'Moderator': 'AE Team',
+        'REN': 'REN Team',
+        'QualityContributor': 'Quality Contributor',
+        'Other': ''
+        }
+#for name, css_class in mods.items():
+#    mod = reddit.redditor(name)
+#    flair = reddit.subreddit('AskEconomics').flair(redditor=mod).next()
+#    if flair['flair_text'] in ex:       
+#        reddit.subreddit('AskEconomics').flair.set(mod, texts[css_class], css_class)
+#    print(name)
+#    flair = reddit.subreddit('AskEconomics').flair(redditor=mod)
+#    for f in flair:
+#        print(f['user'], f['flair_text'])
+    
+#%%
+#def calcGini(data):
+#    data = modShareDF(data)
+#    data = data.loc[data['Action'][::-1].index, :]
+#    dx = 1/data['Action'].size
+#    eqs = np.linspace(dx, 1, data['Action'].size)
+#    cums = data['Action'].cumsum()
+#    ints = (eqs - cums)*dx
+#    
+#    return sum(ints)
+#def giniShareDF(data, limit = .01, start = None):
+#    
+#    g = data.groupby('Mod')
+#    agg = g.agg(np.size).sort_values('Action', ascending = False).iloc[1:,:]
+#    agg = agg/agg['Action'].sum()
+#    
+#    red, yel = getMods()
+#    
+#    def colorcode(x):
+#        if x in red: return 'red'
+#        return 'yellow'
+#    agg['color'] = agg.index.to_series().apply(colorcode)
+#    agg = agg.loc[agg['Action'] > .001, ['Action','color']]
+#    agg['Action'] = agg['Action']/agg['Action'].sum()
+#    print(agg)
+#    return agg
+#def makeGiniChart(wind = "30d"):
+#    data = filterActions()
+#    data = data.set_index('Time').sort_index()
+#    print(data)
+#    
+#    g = data.groupby('Mod')
+#    for group in g:
+#        if group[0] == 'BainCapitalist':
+#            print(group)
+#    print()
+#    #newSer = data['Action'].rolling(wind).apply(calcGini)
+#    print(newSer)
+#    return newSer
+    
+#newQuery()
+start = dt.now() - td(days = 30)
+#makeBarChart(df,start = start)
+
+g = df.groupby('ID')
+df = g.filter(lambda x: len(x['Action']) == 2)
+temp = df['Action'] == 'approvecomment'
+df['Count'] = temp.cumsum()
+#g = df.grouby('ID')
+#for group in g:
+#    print(group)
+#    break
+
+
+
+
+
+
